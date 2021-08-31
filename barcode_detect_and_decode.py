@@ -27,8 +27,8 @@ def preprocess(image):
 	thresh = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	return thresh
 
-
-def decodeBarcode(image_read):
+# decode barcode
+def barcode(image_read):
 	barcodes = decode(image_read)
 
 	for barcode in barcodes:
@@ -53,7 +53,7 @@ ap.add_argument("-pre", "--preprocess", required = False, help = "pre process im
 args = vars(ap.parse_args())
 image_dir = args["dir"]
 image_file_name = args["image"]
-is_preprocess = args["preprocess"]
+is_preprocess = args["preprocess"] #exp
 
 if not image_dir and not image_file_name:
 	print("required path to the image file or images dir using --image or --dir")
@@ -63,10 +63,10 @@ if image_dir:
 		image_read_in_folder = cv2.imread(image_dir+'/'+image_in_folder, 0)
 		if is_preprocess:
 			image_read_in_folder = preprocess(image_read_in_folder)
-		decodeBarcode(image_read_in_folder)
+		barcode(image_read_in_folder)
 else:
 	image_read = cv2.imread(image_file_name, 0) 
 	if is_preprocess: 
 		image_read = preprocess(image_read)
-	decodeBarcode(image_read)
+	barcode(image_read)
 
