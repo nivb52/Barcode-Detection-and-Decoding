@@ -1,13 +1,10 @@
-import os
+from os import listdir
+from os.path import isfile, join
 import argparse
-import zbar
-import numpy as np
-import cv2
+import cv2 
+from pyzbar.pyzbar import decode
 
 def preprocess(image):
-	# load the image
-	image = cv2.imread(args["image"])
-
 	#resize image
 	image = cv2.resize(image,None,fx=0.7, fy=0.7, interpolation = cv2.INTER_CUBIC)
 
@@ -30,34 +27,46 @@ def preprocess(image):
 	thresh = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	return thresh
 
-	
-def barcode(image):
-	# create a reader
-	scanner = zbar.ImageScanner()
-	
-	# configure the reader
-	scanner.parse_config('enable')
-	
-	# obtain image data
-	width, height = image.shape
-	raw = image.tobytes()
 
-	image = zbar.Image(width, height, 'Y800', raw)
+def decodeBarcode(image_read):
+	barcodes = decode(image_read)
 
-	# scan the image for barcodes
-	scanner.scan(image)
-	
-	# extract results
-	for symbol in image:
-	    # do something useful with results
-	    print 'format:', symbol.type, '| data:', '"%s"' % symbol.data
-	# clean up
-	print '-----------------------------------------------------------------------'
-	del(image)
+	for barcode in barcodes:
+		barcode_data = barcode.data.decode("utf-8")
+		barcode_type = barcode.type
+		(x, y, w, h) = barcode.rect	
+
+		print("[INFO] code: {} || image: {} || format {} || Location: x {}, y {}, w {}, h {}".format(
+			barcode_data, image_in_folder, barcode_type, x, y, w, h))
+		
+	if not len(barcodes):
+		print("[NOT FOUND] on this page")
+
+	print('-----------------------------------------------------------------------')
+	del(image_read)
+
 	
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required = True, help = "path to the image file")
+ap.add_argument("-i", "--image", required = False, help = "path to the image file")
+ap.add_argument("-d", "--dir", required = False, help = "path to the images folder")
+ap.add_argument("-pre", "--preprocess", required = False, help = "pre process images")
 args = vars(ap.parse_args())
-image = cv2.imread(args["image"],0) 
-image = preprocess(args["image"])
-barcode(image)
+image_dir = args["dir"]
+image_file_name = args["image"]
+is_preprocess = args["preprocess"]
+
+if not image_dir and not image_file_name:
+	print("required path to the image file or images dir using --image or --dir")
+if image_dir:
+	images = [f for f in listdir(image_dir) if isfile(join(image_dir, f))]
+	for image_in_folder in images:
+		image_read_in_folder = cv2.imread(image_dir+'/'+image_in_folder, 0)
+		if is_preprocess:
+			image_read_in_folder = preprocess(image_read_in_folder)
+		decodeBarcode(image_read_in_folder)
+else:
+	image_read = cv2.imread(image_file_name, 0) 
+	if is_preprocess: 
+		image_read = preprocess(image_read)
+	decodeBarcode(image_read)
+
